@@ -3,15 +3,15 @@ from pymavlink import mavutil , mavwp
 import time
 
 # Create the connection
-device = '/dev/ttyAMA0'
-baudrate = 115200
+#device = '/dev/ttyAMA0'
+#baudrate = 115200
 
-print('Connecting to ' + device + '...')
-vehicle = mavutil.mavlink_connection(device, baud=baudrate)
+#print('Connecting to ' + device + '...')
+#vehicle = mavutil.mavlink_connection(device, baud=baudrate)
 
-vehicle.wait_heartbeat()
+#vehicle.wait_heartbeat()
 
-master = vehicle
+#master = vehicle
 
 
 wp = mavwp.MAVWPLoader()
@@ -83,6 +83,9 @@ def UPLOAD_MISSION(master, aFileName):
         print('Sending waypoint {0}'.format(msg.seq))
 
 
+    
+
+
 
 def RESET_MISSION(master):
 
@@ -91,3 +94,17 @@ def RESET_MISSION(master):
     '''
     master.mav.mission_clear_all_send(
         master.target_system, master.target_component)
+    
+
+def FLASH_MSG_GCS(master, text):
+
+    '''
+    mavlink cmd to flash message to the GCS 
+    more info @statustext 
+    '''
+
+    # Define the message severity (1 for critical, 2 for error, 3 for warning, 4 for notice, 5 for info)
+    severity = 4
+
+    # Send the flash message
+    master.mav.statustext_send(severity, text.encode())
