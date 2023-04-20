@@ -12,8 +12,8 @@ HARDWARE LIBRARIES
 PYMAVLINK SKELETON START
 '''
 # Create the connection
-device = '/dev/ttyAMA0'
-baudrate = 115200
+device = '/dev/ttyUSB0'
+baudrate = 921600
 
 print('Connecting to ' + device + '...')
 vehicle = mavutil.mavlink_connection(device, baud=baudrate)
@@ -26,7 +26,7 @@ master = vehicle    #copy the obj
 
 from cmd_msg import *
 from waypoint import *
-
+from rgb_btn import *
 '''
 PYMAVLINK SKELETON END
 '''
@@ -61,12 +61,12 @@ AIRCRAFT Is Ready i.e. after step 6
 """
 
 #Mission File 
-file_name = "/"
+file_name = "mission_upload.txt"
 
 #location vars
 meas_lat, meas_long = 0, 0
 lat_TH, long_TH = 100, 100
-abs_lat, abs_long = 23, 23
+abs_lat, abs_long = 12.9785676, 77.64006309999999
 
 #Booleans/count
 PROCEED = 0
@@ -77,7 +77,15 @@ max_mah = 7000
 
 def main_flow():
 
+    #Button Logic with neo
+    btn_main()
+
+    print("Started the backend Sequence!!!!")
+
+    
     meas_lat, meas_long = GEO_LOCATION(master)
+
+    print(meas_lat, meas_long)
     
     if(abs(abs_lat - meas_lat) > lat_TH and abs(abs_long - meas_long) > long_TH ):
 
@@ -86,13 +94,17 @@ def main_flow():
 
     else: PROCEED = 1
 
+   
     #Get Battery Status
-    used_mah = BATTERY_STATUS(master)
+    # used_mah = BATTERY_STATUS(master)
 
-    if(used_mah > 7000) : print("Aircraft won't be able to make it back to the Hub") #Do something about this
-    else : PROCEED += 1
+    # if(used_mah > 7000) : print("Aircraft won't be able to make it back to the Hub") #Do something about this
+    # else : PROCEED += 1
+    
+    print(PROCEED)
 
-    if(PROCEED == 2) : 
+
+    if(PROCEED == 1) : 
 
         #Reset Mission 
         RESET_MISSION(master)
@@ -103,14 +115,23 @@ def main_flow():
         #Change Mode to AUTO
         CHANGE_MODE(master, mode="AUTO")
 
+        #Auto Mode Indication - Rainbow Dance
+        rainbow_cycle(0.01)
+
         #Flash the Message in the GCS
         FLASH_MSG_GCS(master, "CC has uploaded the return leg succesfully!")
 
-        #This is where the btn code goes
+        #Arming...
+        time.sleep(2)
+        ARM_THE_FCU(master)
+        #Flash the Message in the GCS
+        FLASH_MSG_GCS(master, "FCU ARMED!")
+
+    #     #This is where the btn code goes
         
 
 
-
+main_flow()
 
 
 

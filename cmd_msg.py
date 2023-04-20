@@ -48,12 +48,12 @@ def CHANGE_MODE(master, mode):
     mode_id = master.mode_mapping()[mode]
     master.mav.set_mode_send(master.target_system, mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, mode_id)
 
-    print("Mode %s", mode)
+    print("Mode : ", mode)
 
 def GEO_LOCATION(master):
 
     result = master.location()
-    return result.lat, result.lon
+    return result.lat, result.lng
 
 def BATTERY_STATUS(master):
 
