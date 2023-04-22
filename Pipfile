@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pymavlink = "*"
+serial = "*"
+pyserial = "*"
+"rpi.gpio" = "*"
+rpi-ws281x = "*"
+adafruit-circuitpython-neopixel = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"

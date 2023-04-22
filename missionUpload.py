@@ -3,8 +3,8 @@ from pymavlink import mavwp
 import time
 
 # Create the connection
-device = '/dev/ttyAMA0'
-baudrate = 115200
+device = '/dev/ttyUSB0'
+baudrate =  921600
 
 print('Connecting to ' + device + '...')
 master = mavutil.mavlink_connection(device, baud=baudrate)
@@ -76,4 +76,4 @@ def uploadmission(aFileName):
         print('Sending waypoint {0}'.format(msg.seq))
 
 
-uploadmission('mission.txt')
+uploadmission('mission_upload.txt')

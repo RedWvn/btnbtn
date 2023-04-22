@@ -12,8 +12,8 @@ HARDWARE LIBRARIES
 PYMAVLINK SKELETON START
 '''
 # Create the connection
-device = '/dev/ttyAMA0'
-baudrate = 115200
+device = '/dev/ttyUSB0'
+baudrate = 921600
 
 print('Connecting to ' + device + '...')
 vehicle = mavutil.mavlink_connection(device, baud=baudrate)
@@ -26,7 +26,7 @@ master = vehicle    #copy the obj
 
 from cmd_msg import *
 from waypoint import *
-
+from rgb_btn import *
 '''
 PYMAVLINK SKELETON END
 '''
@@ -60,13 +60,13 @@ AIRCRAFT Is Ready i.e. after step 6
 
 """
 
-#Mission File 
-file_name = "/"
-
+#Mission Dir 
+#file_name = "mission_upload.txt"
+mission_dir = "/home/pi/ProjectBtn/MissionFiles"
 #location vars
 meas_lat, meas_long = 0, 0
-lat_TH, long_TH = 100, 100
-abs_lat, abs_long = 23, 23
+lat_TH, long_TH = 0.0001, 0.0001
+abs_lat, abs_long = 12.9785676, 77.64006309999999
 
 #Booleans/count
 PROCEED = 0
@@ -77,40 +77,90 @@ max_mah = 7000
 
 def main_flow():
 
+
+    #Aircraft is Disarmed at this stage!
+    DISARM_THE_FCU(master)
+
+    #Toggle the safety switch 
+    TOGGLE_SAFETY_SWITCH(master, safety_switch_armed=False) #safeety_switch_armed = True, means the outputs are armed!
+
+    #Button Logic with neo
+    btn_main()
+
+    print("Started the backend Sequence!!!!")
+
+    #Gets the lat and long of the current GPS measurement
     meas_lat, meas_long = GEO_LOCATION(master)
+    print(meas_lat, meas_long)
+
+    #Gets the lat and long from the last waypoint of the mission file
+    mission_lat, mission_long = GET_LAST_GEO_LOCATION(master)
+
+    print(mission_lat, mission_long)
+
+
     
-    if(abs(abs_lat - meas_lat) > lat_TH and abs(abs_long - meas_long) > long_TH ):
+    if(abs(mission_lat - meas_lat) > lat_TH and abs(mission_long - meas_long) > long_TH ):
 
         print("Error")
         #Do something over here
+        #NeoPixel to Red
 
-    else: PROCEED = 1
+    else:
 
+        PROCEED = 1
+        
+        #if(abs(abs_lat - meas_lat) > lat_TH and abs(abs_long - meas_long) > long_TH ):
+
+
+   
     #Get Battery Status
-    used_mah = BATTERY_STATUS(master)
+    # used_mah = BATTERY_STATUS(master)
 
-    if(used_mah > 7000) : print("Aircraft won't be able to make it back to the Hub") #Do something about this
-    else : PROCEED += 1
+    # if(used_mah > 7000) : print("Aircraft won't be able to make it back to the Hub") #Do something about this
+    # else : PROCEED += 1
+    
+    print(PROCEED)
 
-    if(PROCEED == 2) : 
+
+    if(PROCEED == 1) : 
 
         #Reset Mission 
         RESET_MISSION(master)
 
         #Upload Mission
-        UPLOAD_MISSION(master, file_name)
-
-        #Change Mode to AUTO
-        CHANGE_MODE(master, mode="AUTO")
-
-        #Flash the Message in the GCS
-        FLASH_MSG_GCS(master, "CC has uploaded the return leg succesfully!")
-
-        #This is where the btn code goes
-        
+        mission_file = COMPARE_LAT_LON_WITH_MISSION_FILES(meas_lat, meas_long, mission_dir, 0.0001)
+        if mission_file != None:
+            print("Return Mission Found, Uploading the mission")
+            #neopixel Yellow Color Here
+            UPLOAD_MISSION(master, mission_file)
+            #neopixel Green Color Here
 
 
+            #Change Mode to AUTO
+            CHANGE_MODE(master, mode="AUTO")
 
+            #Auto Mode Indication - Rainbow Dance
+            rainbow_cycle(0.01)
+
+            #Flash the Message in the GCS
+            FLASH_MSG_GCS(master, "CC has uploaded the return leg succesfully!")
+
+            #Arming...
+            time.sleep(2)
+            ARM_THE_FCU(master)
+            #Flash the Message in the GCS
+            FLASH_MSG_GCS(master, "FCU ARMED!")
+
+            #This is where the btn code goes
+
+        else:
+            print("Return Leg Mission not found!")
+            #neopixel Red Color Here
+            #Force
+
+
+main_flow()
 
 
 

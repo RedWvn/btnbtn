@@ -1,6 +1,7 @@
 from pymavlink import mavutil , mavwp
 
 import time
+import os 
 
 # Create the connection
 #device = '/dev/ttyAMA0'
@@ -12,6 +13,9 @@ import time
 #vehicle.wait_heartbeat()
 
 #master = vehicle
+
+##Added Upload mission based on the current geo-location 
+
 
 
 wp = mavwp.MAVWPLoader()
@@ -38,7 +42,9 @@ def UPLOAD_MISSION(master, aFileName):
     home_location = None
     home_altitude = None
 
-    with open(aFileName) as f:
+    mission_file = "/home/pi/ProjectBtn/MissionFiles/" + aFileName
+
+    with open(mission_file) as f:
         for i, line in enumerate(f):
             if i==0:
                 if not line.startswith('QGC WPL 110'):
@@ -108,3 +114,60 @@ def FLASH_MSG_GCS(master, text):
 
     # Send the flash message
     master.mav.statustext_send(severity, text.encode())
+
+
+
+def GET_LAST_GEO_LOCATION(master):
+
+    master.wait_gps_fix()
+
+    #Get the last waypoint from the mission file 
+    mission = master.waypoint_request_list()
+    last_waypoint = mission[-2]   # In our case last waypoint is aux function and that is why last but one!
+
+    return last_waypoint.x, last_waypoint.y
+
+
+
+
+'''
+    Compare current geo-location 
+
+    1. Get the current geo-location 
+    2. Read the mission files sotored in the CC 
+    3. Upload the mission file that matches with the current geo-location within set threshold tollerance. Indicating with the Green Light!
+    4. If not throw an error - Perhaps RED light on the neopixel inidcating error. And Force disarm 
+
+'''
+
+def COMPARE_LAT_LON_WITH_MISSION_FILES(gps_lat, gps_lon, mission_dir, tolerance):
+    # List all .txt files in the mission directory
+    mission_files = [f for f in os.listdir(mission_dir) if f.endswith('.waypoints')]
+
+    # Loop through all mission files and compare lat and lon with the GPS measurement
+    for mission_file in mission_files:
+        # Open the mission file and read the second line
+        with open(os.path.join(mission_dir, mission_file)) as f:
+            # Call readline() once to read the first line (which we discard)
+            f.readline()
+
+            # Call readline() again to read the second line (which contains lat/lon)
+            second_line = f.readline()
+            print(type(second_line))
+            # Extract the lat/lon from the second line and convert to floats
+            lat_lon = second_line.split()
+            print(lat_lon)
+            mission_lat = float(lat_lon[8])
+            mission_lon = float(lat_lon[9])
+
+        # Calculate the distance between the mission lat/lon and GPS measurement
+        distance = ((gps_lat - mission_lat) ** 2 + (gps_lon - mission_lon) ** 2) ** 0.5
+        print(distance)
+
+        # Check if the distance is within the specified range
+        if distance <= tolerance:
+            # Return the mission file name
+            return mission_file
+
+    # Return None if no mission files were found within the specified range
+    return None
