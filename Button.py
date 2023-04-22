@@ -148,7 +148,10 @@ def main_flow():
 
             #Arming...
             time.sleep(2)
-            ARM_THE_FCU(master)
+            flag = TOGGLE_SAFETY_SWITCH(master, safety_switch_armed=True)
+
+            ARM_THE_FCU(master, flag)
+            
             #Flash the Message in the GCS
             FLASH_MSG_GCS(master, "FCU ARMED!")
 
