@@ -119,14 +119,30 @@ def FLASH_MSG_GCS(master, text):
 
 def GET_LAST_GEO_LOCATION(master):
 
-    master.wait_gps_fix()
+     # send command to request current mission items
+    master.waypoint_request_list_send()
 
-    #Get the last waypoint from the mission file 
-    mission = master.waypoint_request_list()
-    last_waypoint = mission[-2]   # In our case last waypoint is aux function and that is why last but one!
+    # wait for mission count message
+    msg = None
+    while msg is None or msg.get_type() != 'MISSION_COUNT':
+        msg = master.recv_match(type='MISSION_COUNT', blocking=True)
 
-    return last_waypoint.x, last_waypoint.y
+    mission_count = msg.count
 
+    # send command to request last waypoint
+    master.waypoint_request_send(mission_count - 2) #Last but 2nd wavpoint since, last waypoint is Aux function!
+
+    # wait for mission item message
+    msg = None
+    while msg is None or msg.get_type() != 'MISSION_ITEM':
+        msg = master.recv_match(type='MISSION_ITEM', blocking=True)
+
+    # extract latitude and longitude from mission item
+    latitude = msg.x     
+    longitude = msg.y
+
+    # return the location as a tuple
+    return (latitude, longitude)
 
 
 

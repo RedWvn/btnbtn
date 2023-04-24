@@ -65,7 +65,7 @@ AIRCRAFT Is Ready i.e. after step 6
 mission_dir = "/home/pi/ProjectBtn/MissionFiles"
 #location vars
 meas_lat, meas_long = 0, 0
-lat_TH, long_TH = 0.0001, 0.0001
+lat_TH, long_TH = 0.01, 0.01
 abs_lat, abs_long = 12.9785676, 77.64006309999999
 
 #Booleans/count
@@ -82,7 +82,7 @@ def main_flow():
     DISARM_THE_FCU(master)
 
     #Toggle the safety switch 
-    TOGGLE_SAFETY_SWITCH(master, safety_switch_armed=False) #safeety_switch_armed = True, means the outputs are armed!
+    #TOGGLE_SAFETY_SWITCH(master, safety_switch_armed=False) #safeety_switch_armed = True, means the outputs are armed!
 
     #Button Logic with neo
     btn_main()
@@ -91,76 +91,77 @@ def main_flow():
 
     #Gets the lat and long of the current GPS measurement
     meas_lat, meas_long = GEO_LOCATION(master)
-    print(meas_lat, meas_long)
+    print("Measured Lat and Long: ", meas_lat, meas_long)
 
     #Gets the lat and long from the last waypoint of the mission file
     mission_lat, mission_long = GET_LAST_GEO_LOCATION(master)
 
-    print(mission_lat, mission_long)
+    print("Waypoint Lat and Long: ", mission_lat, mission_long)
 
 
     
     if(abs(mission_lat - meas_lat) > lat_TH and abs(mission_long - meas_long) > long_TH ):
 
         print("Error")
+        print("Difference:LAT:", mission_lat - meas_lat, "LONG:", mission_long - meas_long)
         #Do something over here
         #NeoPixel to Red
 
     else:
 
         PROCEED = 1
-        
+        print(PROCEED)
         #if(abs(abs_lat - meas_lat) > lat_TH and abs(abs_long - meas_long) > long_TH ):
 
 
    
-    #Get Battery Status
-    # used_mah = BATTERY_STATUS(master)
+        #Get Battery Status
+        # used_mah = BATTERY_STATUS(master)
 
-    # if(used_mah > 7000) : print("Aircraft won't be able to make it back to the Hub") #Do something about this
-    # else : PROCEED += 1
-    
-    print(PROCEED)
-
-
-    if(PROCEED == 1) : 
-
-        #Reset Mission 
-        RESET_MISSION(master)
-
-        #Upload Mission
-        mission_file = COMPARE_LAT_LON_WITH_MISSION_FILES(meas_lat, meas_long, mission_dir, 0.0001)
-        if mission_file != None:
-            print("Return Mission Found, Uploading the mission")
-            #neopixel Yellow Color Here
-            UPLOAD_MISSION(master, mission_file)
-            #neopixel Green Color Here
+        # if(used_mah > 7000) : print("Aircraft won't be able to make it back to the Hub") #Do something about this
+        # else : PROCEED += 1
+        
+        
 
 
-            #Change Mode to AUTO
-            CHANGE_MODE(master, mode="AUTO")
+        if(PROCEED == 1) : 
 
-            #Auto Mode Indication - Rainbow Dance
-            rainbow_cycle(0.01)
+            #Reset Mission 
+            RESET_MISSION(master)
 
-            #Flash the Message in the GCS
-            FLASH_MSG_GCS(master, "CC has uploaded the return leg succesfully!")
+            #Upload Mission
+            mission_file = COMPARE_LAT_LON_WITH_MISSION_FILES(meas_lat, meas_long, mission_dir, 0.0001)
+            if mission_file != None:
+                print("Return Mission Found, Uploading the mission")
+                #neopixel Yellow Color Here
+                UPLOAD_MISSION(master, mission_file)
+                #neopixel Green Color Here
 
-            #Arming...
-            time.sleep(2)
-            flag = TOGGLE_SAFETY_SWITCH(master, safety_switch_armed=True)
 
-            ARM_THE_FCU(master, flag)
-            
-            #Flash the Message in the GCS
-            FLASH_MSG_GCS(master, "FCU ARMED!")
+                #Change Mode to AUTO
+                CHANGE_MODE(master, mode="AUTO")
 
-            #This is where the btn code goes
+                #Auto Mode Indication - Rainbow Dance
+                rainbow_cycle(0.01)
 
-        else:
-            print("Return Leg Mission not found!")
-            #neopixel Red Color Here
-            #Force
+                #Flash the Message in the GCS
+                FLASH_MSG_GCS(master, "CC has uploaded the return leg succesfully!")
+
+                #Arming...
+                time.sleep(2)
+                flag = TOGGLE_SAFETY_SWITCH(master, safety_switch_armed=True)
+
+                ARM_THE_FCU(master, flag)
+                
+                #Flash the Message in the GCS
+                FLASH_MSG_GCS(master, "FCU ARMED!")
+
+                #This is where the btn code goes
+
+            else:
+                print("Return Leg Mission not found!")
+                #neopixel Red Color Here
+                #Force
 
 
 main_flow()

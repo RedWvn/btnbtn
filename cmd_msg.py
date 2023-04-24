@@ -142,8 +142,7 @@ def TOGGLE_SAFETY_SWITCH(master, safety_switch_armed):
         0, 
         0,
         0, 
-        0, 
-        0)
+        0, 0, 0)
     
     #The below code waits for the acknowledgement 
     while True:
