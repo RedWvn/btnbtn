@@ -109,8 +109,9 @@ def FLASH_MSG_GCS(master, text):
     more info @statustext 
     '''
 
-    # Define the message severity (1 for critical, 2 for error, 3 for warning, 4 for notice, 5 for info)
-    severity = 4
+    # Define the message severity (2 for critical, 3 for error, 4 for warning, 5 for notice, 6 for info)
+    #Ref mavlink messages @https://mavlink.io/en/messages/common.html#MAV_MODE
+    severity = 6
 
     # Send the flash message
     master.mav.statustext_send(severity, text.encode())
