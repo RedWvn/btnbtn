@@ -16,7 +16,7 @@ PYMAVLINK SKELETON START
 # baudrate = 921600
 #device = 'tcp:127.0.0.1:5760' 
 #100.76.176.16
-device = 'tcp:100.76.176.16:5762'   # Connection over tcp for sitl
+device = 'tcp:100.93	.85.117:5770'
 print('Connecting to ' + device + '...')
 vehicle = mavutil.mavlink_connection(device)
 
@@ -69,8 +69,8 @@ AIRCRAFT Is Ready i.e. after step 6
 mission_dir = "/home/pi/ProjectBtn/MissionFiles"
 #location vars
 meas_lat, meas_long = 0, 0
-lat_TH, long_TH = 0.01, 0.01
-#abs_lat, abs_long = 12.9785676, 77.64006309999999
+lat_TH, long_TH = 0.0001, 0.0001
+abs_lat, abs_long = 12.9785676, 77.64006309999999
 
 #Booleans/count
 PROCEED = 0
@@ -80,7 +80,7 @@ used_mah = 0
 max_mah = 7000
 
 #Micro Functions 
-file_path = r"/home/pi/ProjectBtn/btnbtn/LandComplete.txt"
+file_path = "LandComplete.txt"
 value = ""
 
 def store_land_result():
@@ -134,71 +134,54 @@ def main_flow():
     TOGGLE_SAFETY_SWITCH(master, safety_switch_on=True) #safety_switch_on = True, means the outputs are disarmed!
     print("Toggled Safety Switch!")
 
+
+    #Loop Untill the start of The Button Sequence!
+    print("Press and Hold Button for 2 seconds!")
+    btn_mission_upload()
+
     '''
     Safety Requirments!
     1. If the button is pressed in hub, the button sequence shold not run.  --> Solution : compare the cur gps location 
     '''
     print("Started the backend Sequence!!!!")
 
-    neo_pixel_color(0,0,255) #Pixel color changed to blue
-
-    hdop_val = HDOP_CHECK(master)
-
-    if(hdop_val > 1.5):
-        print("HDOP Error!")
-        while True:
-            neo_pixel_color(255,0,0)
-            time.sleep(0.2)
-            neo_pixel_color(0,0,0)
-            time.sleep(0.2)
-
     #Gets the lat and long of the current GPS measurement
     meas_lat, meas_long = GEO_LOCATION(master)
     print("Measured Lat and Long: ", meas_lat, meas_long)
 
     #Gets the lat and long from the last waypoint of the mission file
-    #Also get the lat and long of the first waypoint of the mission.
-    mission_lat_lastn1, mission_long_lastn1, mission_lat_first, mission_long_first = GET_LAST_GEO_LOCATION(master)
+    mission_lat, mission_long = GET_LAST_GEO_LOCATION(master)
 
-    print("Waypoint Lat and Long: ", mission_lat_lastn1, mission_long_lastn1)
+    print("Waypoint Lat and Long: ", mission_lat, mission_long)
 
 
     
-    if(abs(mission_lat_lastn1 - meas_lat) > lat_TH and abs(mission_long_lastn1 - meas_long) > long_TH ):
+    if(abs(mission_lat - meas_lat) > lat_TH and abs(mission_long - meas_long) > long_TH ):
 
         print("Error")
-        print("Difference:LAT:", mission_lat_lastn1 - meas_lat, "LONG:", mission_long_lastn1 - meas_long)
+        print("Difference:LAT:", mission_lat - meas_lat, "LONG:", mission_long - meas_long)
         #Do something over here
         #NeoPixel to Red
-        #neo_pixel_color(255,0,0)
-        while True:
-            neo_pixel_color(255,0,0)
-            time.sleep(0.2)
-            neo_pixel_color(0,0,0)
-            time.sleep(0.2)
+        neo_pixel_color(255,0,0)
 
     else:
 
         PROCEED = 1
         print(PROCEED)
         #if(abs(abs_lat - meas_lat) > lat_TH and abs(abs_long - meas_long) > long_TH ):
-        neo_pixel_color(0,255,0)
-        buzz_beep_start()
-        time.sleep(1)
-        buz_beep_stop()
-        
+
+
+   
         #Get Battery Status
         # used_mah = BATTERY_STATUS(master)
 
         # if(used_mah > 7000) : print("Aircraft won't be able to make it back to the Hub") #Do something about this
         # else : PROCEED += 1
+        
+        
+
 
         if(PROCEED == 1) : 
-
-            #Loop Untill the start of The Button Sequence!
-            print("Press and Hold Button for 2 seconds!")
-            btn_mission_upload()
-    
 
             #Reset Mission 
             #RESET_MISSION(master)
@@ -206,7 +189,7 @@ def main_flow():
             RESTART_MISSION(master)
 
             #Upload Mission
-            mission_file = COMPARE_LAT_LON_WITH_MISSION_FILES(meas_lat, meas_long, mission_dir, 0.01)
+            mission_file = COMPARE_LAT_LON_WITH_MISSION_FILES(meas_lat, meas_long, mission_dir, 0.0001)
             print(mission_file)
             
             if mission_file != None:
@@ -214,23 +197,6 @@ def main_flow():
                 #neopixel Yellow Color Here
                 UPLOAD_MISSION(master, mission_file)
                 #neopixel Green Color Here
-                neo_pixel_color(0,0,255)
-                #Check if entire mission is uploaded or not!
-                return_leg_lat, return_leg_long =  READ_LAST_WAYPOINT(mission_dir, mission_file)  
-
-                if(abs(return_leg_lat - mission_lat_first) > lat_TH and abs(return_leg_long - mission_long_first) > long_TH):
-
-                    print("Mission Upload Incomplete!")
-                    print("Difference:LAT:", abs(return_leg_lat - mission_lat_first), "LONG:", abs(return_leg_long - mission_long_first) > long_TH)
-                    while True:
-
-                        neo_pixel_color(255,0,0)
-                        time.sleep(0.2)
-                        neo_pixel_color(0,0,0)
-                        time.sleep(0.2)
-
-
-                time.sleep(1.5)
                 neo_pixel_color(0,255,0)
 
                 #Button Logic with neo
@@ -247,10 +213,9 @@ def main_flow():
                 FLASH_MSG_GCS(master, "CC has uploaded the return leg succesfully!")
 
                 #Arming...
-                time.sleep(0.5)
+                time.sleep(2)
                 flag = TOGGLE_SAFETY_SWITCH(master, safety_switch_on=False) #safety_switch_on = True, means the outputs are disarmed!
-
-                time.sleep(0.5)
+                time.sleep(2)
                 ARM_THE_FCU(master, flag)
                 
                 #Flash the Message in the GCS
@@ -263,8 +228,21 @@ def main_flow():
                 print("Return Leg Mission not found!")
                 clear_land_result()
                 #neopixel Red Color Here
-                pixels.fill((255, 0, 0))
                 #Force
 
 
 main_flow()
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -201,3 +201,33 @@ def RECV_MSG_AUTOPILOT(master):
 
         # Do other things here as needed
         time.sleep(0.1) # Delay to avoid consuming too much CPU time
+
+
+def RESTART_MISSION(master):
+
+    # # Wait for the mission to be received
+    # while True:
+    #     msg = master.recv_match(type='MISSION_COUNT', blocking=True)
+    #     if msg is not None:
+    #         break
+
+    # # Check if there are mission items
+    # if msg.count > 0:
+        # Restart the mission by setting the current mission item index to 0
+    master.mav.mission_set_current_send(
+        master.target_system, master.target_component, 0 # restarts the mission.
+    )
+
+    print("Mission restarted.")
+        
+def HDOP_CHECK(master):
+
+    while True:
+        # Wait for the GPS message to be received
+        # Check for incoming messages from autopilot
+        #@Ref mavlink messages @https://mavlink.io/en/messages/common.html#GPS_RAW_INT
+        msg = master.recv_match(type='GPS_RAW_INT', blocking=True)
+        if msg is not None:
+            print(msg.eph/100)
+
+        return msg.eph/100

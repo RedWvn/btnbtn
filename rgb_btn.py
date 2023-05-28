@@ -11,10 +11,10 @@ num_pixels = 6          #declare the number of NeoPixels
 pixel_pin = board.D18   #declare the NeoPixel out put pin
 BUTTON_PRESS_TIME = 5   #Button press state time
 BUTTON_PRESS_MI_UPLOAD = 2 # This is for mission upload | starting the sequence!
-BLINKING_TIME_SEQUENCES = 5
+BLINKING_TIME_SEQUENCES = 2
 
 #Buzzer Pin
-buzzer_pin = 19
+buzzer_pin = 13
 
 #Warning: Do not change anything from here
 
@@ -32,7 +32,7 @@ ORDER = neopixel.GRB
 # For RGBW NeoPixels, simply change the ORDER to RGBW or GRBW.
 
 pixels = neopixel.NeoPixel(
-    pixel_pin, num_pixels, brightness=0.5, pixel_order=ORDER
+    pixel_pin, num_pixels, brightness=2, pixel_order=ORDER
 )
 
 def neo_pixel_color(r, g, b):
@@ -72,21 +72,26 @@ def rainbow_cycle(wait):
         pixels.show()
         time.sleep(wait)
 
+def buzz_beep_start():
+    buzz.start(100)
 
-def parking_beep(wait_period):
+def buz_beep_stop():
+    buzz.stop(0)
+
+def parking_beep(wait_period, duration):
 
     beep_sequence = [
-        (1000, 0.5),  # Beep for 200ms at 1000Hz
-                      
+        (255, 1000, duration),  # Beep for 500ms at 1000Hz and R G B 
         ]
 
     count = 0
     # Loop through the beep sequence and play each tone
     while count < wait_period:
 
-        for frequency, duration in beep_sequence:
+        for color, frequency, duration in beep_sequence:
             # Set the duty cycle for the given frequency
             buzz.ChangeFrequency(frequency)
+            pixels.fill((0, 0, color))
             buzz.start(100)  # Start the PWM with a duty cycle of 50%
             
             # Wait for the given duration
@@ -94,15 +99,16 @@ def parking_beep(wait_period):
             
             # Stop the PWM output
             buzz.stop()
+            pixels.fill((color, 0, 0))
             
             # Pause before the next beep
-            time.sleep(0.5)
+            time.sleep(duration)
 
         count += 1
 
 def btn_hold_press(hold_period):
 
-    parking_beep(wait_period=5)  #Indicates the operator, about time to press and hold the button for mission upload!
+    #parking_beep(wait_period=5)  #Indicates the operator, about time to press and hold the button for mission upload!
 
     GPIO.wait_for_edge(BUTTON_PIN, GPIO.FALLING)   #Waits for the ext interrupt aka Button Press!
     pixels.fill((255, 255, 255))
@@ -165,22 +171,23 @@ def btn_main():
         #if button pressed time is greater than BUTTON_PRESS_TIME:value then next sequence will begin
             print ("Arming sequences started")
 
-            for i in range(BLINKING_TIME_SEQUENCES):    
-                #  this FOR loop is for, blinking LED interval of 500 miliseconds 
-                    pixels.fill((255, 0, 0))
-                    time.sleep(0.5) 
-
-                    pixels.fill((0, 0, 255))
-                    time.sleep(0.5)  
-
+            
             pixels.fill((255, 0, 0))
-            time.sleep(5)
+            #time.sleep(5)
 
-            rainbow_cycle(0.01)
+            #rainbow_cycle(0.01)
 
-            parking_beep(wait_period=20)
+            parking_beep(wait_period=6, duration=0.8)
+
+            parking_beep(wait_period=10, duration=0.5)
+
+            parking_beep(wait_period=25, duration=0.1)
+
+            buzz.start(100)
             
-            
+            time.sleep(5)     
+
+            buzz.stop(0)       
 
             break 
             #the break is for, this code will not run again untill reboot
@@ -199,8 +206,8 @@ def btn_main():
 # print("Mission Uploading....")
 # print("Mission Uploading....")
 # print("Mission Uploading....")
-# print("Mission Uploading....")
+#print("Mission Uploading....")
 
-# btn_main()
+#btn_main()
 
 # print("Mission Uploading....")

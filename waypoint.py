@@ -76,12 +76,14 @@ def UPLOAD_MISSION(master, aFileName):
     msg = master.recv_match(type = ['COMMAND_ACK'],blocking = True)
     print(msg)
     print('Set home location: {0} {1}'.format(home_location[0],home_location[1]))
-    time.sleep(1)
+    time.sleep(2)
     
     #send waypoint to airframe
     master.waypoint_clear_all_send()
     master.waypoint_count_send(wp.count())
+    #print("Waypoint Count:", wp.count())
     for i in range(wp.count()):
+        #time.sleep(0.1)
         msg = master.recv_match(type=['MISSION_REQUEST'],blocking=True)
         print(msg)
         master.mav.send(wp.wp(msg.seq))
@@ -130,7 +132,7 @@ def GET_LAST_GEO_LOCATION(master):
 
     mission_count = msg.count
 
-    # send command to request last waypoint
+    # send command to request last but one waypoint
     master.waypoint_request_send(mission_count - 2) #Last but 2nd wavpoint since, last waypoint is Aux function!
 
     # wait for mission item message
@@ -142,8 +144,24 @@ def GET_LAST_GEO_LOCATION(master):
     latitude = msg.x     
     longitude = msg.y
 
+
+    # send command to reuquest 1st waypoint 
+    master.waypoint_request_send(1) #Last but 2nd wavpoint since, last waypoint is Aux function!
+
+    # wait for mission item message
+    msg = None
+    while msg is None or msg.get_type() != 'MISSION_ITEM':
+        msg = master.recv_match(type='MISSION_ITEM', blocking=True)
+
+    # extract latitude and longitude from mission item
+    latitude_1 = msg.x     
+    longitude_1 = msg.y
+
+    #print("Mission Waypoint 1 Lat", latitude_1)
+    #print("Mission Waypoint 1 Long", longitude_1)
+
     # return the location as a tuple
-    return (latitude, longitude)
+    return (latitude, longitude, latitude_1, longitude_1)
 
 
 
@@ -188,3 +206,21 @@ def COMPARE_LAT_LON_WITH_MISSION_FILES(gps_lat, gps_lon, mission_dir, tolerance)
 
     # Return None if no mission files were found within the specified range
     return None
+
+
+def READ_LAST_WAYPOINT(mission_dir, mission_file):
+
+    with open(os.path.join(mission_dir, mission_file)) as file:
+        lines = file.readlines()
+        last_line = lines[-2].strip()  # Remove any leading/trailing whitespace
+        
+        # Extract latitude and longitude from the last line
+        lat_lon = last_line.split()
+        print(lat_lon)
+        mission_lat = float(lat_lon[8])
+        mission_lon = float(lat_lon[9])
+
+        print("First waypoint of return leg LAT: ", mission_lat )
+        print("First waypoint of return leg LONG: ", mission_lon)
+    
+    return mission_lat, mission_lon
